@@ -3,9 +3,9 @@
 
 buffer_t* create_buffer(size_t buffer_size)
 {
-    buffer_t* buffer = get_mem(sizeof(buffer_t));
+    buffer_t* buffer = malloc(sizeof(buffer_t));
 
-    buffer->ptr = get_mem(buffer_size);
+    buffer->ptr = malloc(buffer_size);
     buffer->size = buffer_size;
     buffer->length = 0;
 
@@ -44,6 +44,12 @@ size_t get_buffer_content_length(buffer_t* buffer)
 
 void increase_buffer_content_length(buffer_t* buffer, size_t increase_on)
 {
+    if (buffer->length + increase_on >= buffer->size)
+    {
+        perror("buffer increase lenght error");
+        exit(EXIT_FAILURE);
+    }
+
     buffer->length += increase_on;
 }
 

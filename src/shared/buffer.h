@@ -14,9 +14,9 @@
 
 typedef struct 
 {
-    char* ptr;
-    size_t length;/*content length*/
+    char* ptr;/**/
 
+    size_t length;/*content length*/
     size_t size;/*buffer size*/
 } buffer_t;
 

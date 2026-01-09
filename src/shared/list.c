@@ -9,7 +9,7 @@ static void remove_all_node_recursive(node_t*, destroy_function_t);
 
 list_t* create_list()
 {
-    list_t* list = get_mem(sizeof(list_t));
+    list_t* list = malloc(sizeof(list_t));
 
     list->pointer_in_head = NULL;
     list->count = 0;
@@ -25,12 +25,11 @@ void free_list(list_t* list, destroy_function_t destroy_function)
 }
 
 
-
 void create_node(list_t* list, void* ptr)
 {
     node_t* new_node;
 
-    new_node = get_mem(sizeof(node_t));
+    new_node = malloc(sizeof(node_t));
 
     new_node->data = ptr;
     new_node->next = list->pointer_in_head;
