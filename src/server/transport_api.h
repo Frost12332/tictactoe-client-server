@@ -17,6 +17,18 @@ enum
     queue_connection = 5
 };
 
+typedef enum
+{
+    on_init,
+    on_shut,
+
+    on_setup_fd,
+
+    on_accept,
+    on_read,
+    on_write
+}transport_events_name_t;
+
 typedef struct 
 {
     int max_d;
@@ -27,6 +39,9 @@ typedef struct
 }transport_context_t;
 
 extern transport_context_t server_context;
+
+
+void subscribe_on_event(void (*function_pointer) (void), transport_events_name_t event_name);
 
 
 
