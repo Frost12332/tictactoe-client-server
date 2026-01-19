@@ -1,21 +1,16 @@
 #ifndef TRANSPORT_API_H
 #define TRANSPORT_API_H
+/*
+subscrive on event for receive callback
+start or stop for de/initialize
+and await event for receive event
+*/
 
-
-#include <time.h>
-#include <sys/select.h>
-
-#define DEFAULT_TCP 0
-#define ALL_NETWORK "0.0.0.0"
-
-#define TIMEOUT_SEC 5
-#define TIMEOUT_NSEC 0
-
-
-enum
+typedef enum
 {
-    queue_connection = 5
-};
+    read_event,
+    write_event
+}received_event_type_t;
 
 typedef enum
 {
@@ -29,28 +24,25 @@ typedef enum
     on_write
 }transport_events_name_t;
 
-typedef struct 
-{
-    int max_d;
-    int socket_fd;
-
-    struct timespec timeout;
-    fd_set read_fds, write_fds;
-}transport_context_t;
-
-extern transport_context_t server_context;
-
 
 void subscribe_on_event(void (*function_pointer) (void), transport_events_name_t event_name);
 
 
+int start_transport_level();
 
-int start_server();
+void stop_transport_level();
 
-void setup_timeout();
 
-void prepare_fd_sets();
+int await_event();
 
-void handle_received_event();
+
+int accept_new_connection();
+
+int is_receive_new_connection();
+
+
+int is_receive_event(int fd, received_event_type_t event_type);
+
+int handle_received_event(int fd, received_event_type_t event_type, char* buffer, int length);
 
 #endif

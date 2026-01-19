@@ -4,10 +4,32 @@
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <sys/select.h>
+#include <time.h>
+#include <unistd.h>
 
-transport_context_t server_context;
+
+#define DEFAULT_TCP 0
+#define ALL_NETWORK "0.0.0.0"
+
+#define TIMEOUT_SEC 5
+#define TIMEOUT_NSEC 0
 
 
+enum
+{
+    queue_connection = 5
+};
+
+
+typedef struct 
+{
+    int max_d;
+    int socket_fd;
+
+    struct timespec timeout;
+    fd_set read_fds, write_fds;
+}transport_context_t;
 
 typedef struct
 {
@@ -22,35 +44,21 @@ typedef struct
 
 }transport_level_events_t;
 
-static transport_level_events_t transport_level_events;
 
+
+static transport_context_t server_context;
+static transport_level_events_t transport_level_events;
 
 
 static int initialize_listen_socket();
 
+static void setup_timeout();
 
+static void prepare_fd_sets();
 
 static void prepare_server_fd_sets();
 
-static void prepare_client_fd_sets();
-
-
-
-static void handle_new_connection();
-
-static void handle_write_event();
-
-static void handle_read_event();
-
-
-
-static int is_receive_new_connection();
-
-static int is_receive_write_event();
-
-static int is_receive_read_event();
-
-static int is_receive_event();
+static int call_select();
 
 
 
@@ -81,15 +89,13 @@ void subscribe_on_event(void (*function_pointer) (void), transport_events_name_t
 }
 
 
-
-
-int start_server()
+int start_transport_level()
 {
     /*before start server need load server config*/
 
     /*maybe add another sub-modules like logging*/
-
-    transport_level_events.on_initialize();
+    if (transport_level_events.on_initialize != NULL)
+        transport_level_events.on_initialize();
 
 
     if (initialize_listen_socket() == -1)
@@ -97,6 +103,63 @@ int start_server()
 
     return 0;
 }
+
+
+void stop_transport_level()
+{
+    perror("stop_transport_level not implemented");
+}
+
+
+int await_event()
+{
+    setup_timeout();
+    prepare_fd_sets();
+    
+    return call_select();
+}
+
+
+int accept_new_connection()
+{
+    int accept_result = accept(server_context.socket_fd, NULL, NULL);
+            
+    if (accept_result == -1)
+        perror("receive new connection\n");
+
+    if (accept_result > server_context.max_d)
+            server_context.max_d = accept_result;
+
+    return accept_result;
+}
+
+int is_receive_new_connection()
+{
+    return FD_ISSET(server_context.socket_fd, &server_context.read_fds);
+}
+
+
+int is_receive_event(int fd, received_event_type_t event_type)
+{
+    if(event_type == read_event)
+    {
+        return FD_ISSET(fd, &server_context.read_fds);
+    }
+    else
+    {
+        return FD_ISSET(fd, &server_context.write_fds);
+    }
+    return 0;
+}
+
+int handle_received_event(int fd, received_event_type_t event_type, char* buffer, int length)
+{
+    if (event_type == read_event)
+        return read(fd, buffer, length);
+    else
+        return write(fd, buffer, length);
+}
+
 
 static int initialize_listen_socket()
 {
@@ -127,20 +190,18 @@ static int initialize_listen_socket()
     return result;
 }
 
-
-void setup_timeout()
+static void setup_timeout()
 {
     server_context.timeout.tv_sec = TIMEOUT_SEC;
     server_context.timeout.tv_nsec = TIMEOUT_NSEC;
 }
 
-void prepare_fd_sets()
+static void prepare_fd_sets()
 {
     FD_ZERO(&server_context.read_fds);
     FD_ZERO(&server_context.write_fds);
 
     prepare_server_fd_sets();
-    /*prepare_client_fd_sets();*/
 
     transport_level_events.on_setup_fd_set();
 }
@@ -150,86 +211,10 @@ static void prepare_server_fd_sets()
     FD_SET(server_context.socket_fd, &server_context.read_fds);
 }
 
-static void prepare_client_fd_sets()
+static int call_select()
 {
-    /*migrate this to session level*/
-
-    /*clients fd we receive as result accept function*/
-    /*
-    but for detect in which sets put fd need use some struct
-    which help detect us which client read which speak
-    */
-}
-
-
-
-void handle_received_event(int received_event)
-{
-    if (is_receive_new_connection())
-    {
-        transport_level_events.on_accept_connection();
-        received_event--;
-    }
-    if (received_event > 0)
-    {
-        transport_level_events.on_writable();
-        transport_level_events.on_readable();
-    }
-
-    /*if (is_receive_new_connection())
-    {
-        handle_new_connection();
-        received_event--;
-    }
-    if (received_event > 0)
-    {
-        if (is_receive_write_event())
-            handle_write_event();
-        if (is_receive_read_event())
-            handle_read_event();
-    }*/
-}
-
-static void handle_new_connection()
-{
-    int accept_result = accept(server_context.socket_fd, NULL, NULL);
-            
-    if (accept_result != -1)
-    {
-        printf("receive new connection\n");
-        
-        if (accept_result > server_context.max_d)
-            server_context.max_d = accept_result;
-    }
-}
-
-static void handle_write_event()
-{
-
-}
-
-static void handle_read_event()
-{
-
-}
-
-
-static int is_receive_new_connection()
-{
-    return FD_ISSET(server_context.socket_fd, &server_context.read_fds);
-}
-
-static int is_receive_write_event()
-{
-    return is_receive_event();
-}
-
-static int is_receive_read_event()
-{
-    return is_receive_event();
-}
-
-static int is_receive_event()
-{
-    return 0;
+    return pselect(server_context.max_d + 1, 
+                        &server_context.read_fds,
+                        &server_context.write_fds,
+                        NULL, &server_context.timeout, NULL);
 }

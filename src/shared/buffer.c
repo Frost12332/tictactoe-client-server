@@ -69,7 +69,7 @@ int find(buffer_t* buffer, char separator)
 {
     int position = -1;
 
-    for (int i = 0; i < buffer->length; i++)
+    for (size_t i = 0; i < buffer->length; i++)
     {
         if (buffer->ptr[i] == separator)
         {

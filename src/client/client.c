@@ -24,7 +24,8 @@ int main()
                                 (struct sockaddr*)&addr,
                                 sizeof(struct sockaddr_in));
 
-    
+    if (result_connection == -1)    
+        exit(EXIT_FAILURE);
 
     return EXIT_SUCCESS;
 }
