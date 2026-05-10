@@ -1,5 +1,5 @@
-#ifndef TRANSPORT_API_H
-#define TRANSPORT_API_H
+#ifndef TRANSPORT_API_SERVER_H
+#define TRANSPORT_API_SERVER_H
 /*
 subscrive on event for receive callback
 start or stop for de/initialize

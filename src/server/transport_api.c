@@ -208,7 +208,7 @@ static void prepare_fd_sets()
 
 static void prepare_server_fd_sets()
 {
-    FD_SET(server_context.socket_fd, &server_context.read_fds);
+    FD_SET(server_context.socket_fd, &server_context.read_fds);/*server socket for accept new connection*/
 }
 
 static int call_select()
